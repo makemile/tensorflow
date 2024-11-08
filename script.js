@@ -1,4 +1,5 @@
 let model;
+let stopTraining;
 
 async function getData() {
   const dataHouseR = await fetch("data.json");
@@ -12,6 +13,49 @@ async function getData() {
     (house) => house.precio != null && house.cuartos != null
   );
   return cleanedData;
+}
+
+async function lookAtInferenceCurve() {
+  let data = await getData();
+  let tensorData = await convertDataTensor(data);
+  const { inputsMax, inputsMin, labelMin, labelMax } = tensorData;
+
+  const [xs, preds] = tf.tidy(() => {
+    const xs = tf.linspace(0, 1, 100);
+    const preds = model.predict(xs.reshape([100, 1]));
+
+    const desnormX = xs.mul(labelMax.sub(labelMin)).add(labelMin);
+    const desnormY = preds.mul(labelMax.sub(labelMin)).add(labelMin);
+    return [desnormX.dataSync(), desnormY.dataSync(), desnormY.dataSync()];
+  });
+
+  const predictionPoints = Array.from(xs).map((val, i) => {
+    return { x: val, y: preds[i] };
+  });
+
+  const originalPoints = data.map((d) => ({
+    x: d.cuartos,
+    y: d.precio,
+  }));
+
+  tfvis.render.scatterplot(
+    { name: "predictions vs originals" },
+    { values: [originalPoints, predictionPoints], series: [] },
+    {
+      xLabel: "Cuartos",
+      yLabel: "Precio",
+      height: 300,
+    }
+  );
+}
+
+async function uploadModel() {
+  const uploadJSONInput = document.getElementById("upload-json");
+  const uploadWeightsInput = document.getElementById("upload-weights");
+  model = await tf.loadLayersModel(
+    tf.io.browserFiles([uploadJSONInput.files[0], uploadWeightsInput.files[0]])
+  );
+  console.log("modelo cargado");
 }
 
 function visualizeData(data) {
@@ -64,12 +108,22 @@ async function trainModel(model, inputs, labels) {
     sizeBatch,
     epochs,
     shuffle: true,
-    callbacks: tfvis.show.fitCallbacks(
-      { name: "Training Performance" },
-      ["loss", "mse"],
-      { height: 200, callbacks: ["onEpochEnd"] }
-    ),
+    callbacks: {
+      onEpochEnd: (epoch, log) => {
+        history.push(log);
+        tfvis.show.history(surface, history, ["loss", "mse"]);
+
+        if (stopTraining) {
+          model.stopTraining = true;
+        }
+      },
+    },
   });
+}
+
+async function saveModel() {
+  const saveResult = await model.save("downloads://model-regresion");
+  return saveResult;
 }
 
 function convertDataTensor(data) {

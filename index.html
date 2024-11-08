@@ -2,8 +2,8 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Modelo Regresion</title>
     <!-- TensorFlow.js -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
@@ -12,6 +12,18 @@
 </head>
 
 <body>
+    <div>
+        <label for="upload-json">Json File</label>
+        <input type="file" id="upload-json" />
+    </div>
+    <div>
+        <label for="upload-weights">Binary File</label>
+        <input type="file" id="upload-weights" />
+    </div>
+    <input type="button" value="upload-model" onclick="stopTraining=true;" />
+    <input type="button" value="Stop-training" onclick="stopTraining=true;" />
+    <input type="button" value="Save-model" onclick="saveModel();" />
+    <input type="button" value="curve-inference" onclick="lookAtInferenceCurve();" />
     <script src="script.js"></script>
     <!-- <script type="text/javascript" src="node_modules/default-passive-events/dist/index.js"></script> -->
 </body>
