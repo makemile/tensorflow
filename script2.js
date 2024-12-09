@@ -1,5 +1,7 @@
 let imgEl = document.getElementById("img");
 let descEl = document.getElementById("descripcion_imagen");
+const webCamElement = document.getElementById("webcam");
+let webcam = "";
 
 async function app() {
   try {
@@ -10,6 +12,21 @@ async function app() {
     imgEl.onload = async function () {
       const result = await net.classify(imgEl);
       displayImagePrediction(result);
+
+      webcam = await tf.data.webcam(webCamElement);
+
+      while (true) {
+        const img = await webcam.capture();
+        const result = await net.classify(img);
+        document.getElementById("console").innerHTML =
+          "prediction:" +
+          result[0].className +
+          " probability:" +
+          result[0].probability;
+
+          img.dispose();
+          await tf.nextFrame();
+      }
     };
 
     if (imgEl.complete) {
